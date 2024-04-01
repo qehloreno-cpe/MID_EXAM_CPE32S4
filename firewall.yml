@@ -1,0 +1,50 @@
+---
+- name: Setup firewall
+  hosts: localhost
+  connection: local
+  become: yes
+
+  tasks:
+    - name: Install ufw on Ubuntu (manage node)
+      when: ansible_distribution == 'Ubuntu'
+      apt:
+        name: ufw
+        state: present
+
+    - name: Enable ufw on Ubuntu (manage node)
+      when: ansible_distribution == 'Ubuntu'
+      service:
+        name: ufw
+        state: started
+        enabled: yes
+
+    - name: Allow SSH traffic on Ubuntu (manage node)
+      when: ansible_distribution == 'Ubuntu'
+      command: ufw allow ssh
+
+- name: Setup firewall on CentOS (control node)
+  hosts: all
+  become: yes
+  gather_facts: yes
+  vars:
+    centos_ssh_service: "ssh"
+
+  tasks:
+    - name: Install firewalld on CentOS (control node)
+      when: ansible_facts['os_family'] == 'RedHat'
+      yum:
+        name: firewalld
+        state: present
+
+    - name: Enable firewalld on CentOS (control node)
+      when: ansible_facts['os_family'] == 'RedHat'
+      service:
+        name: firewalld
+        state: started
+        enabled: yes
+
+    - name: Allow SSH traffic on CentOS (control node)
+      when: ansible_facts['os_family'] == 'RedHat'
+      command: firewall-cmd --zone=public --add-service={{ centos_ssh_service }} --permanent
+
+
